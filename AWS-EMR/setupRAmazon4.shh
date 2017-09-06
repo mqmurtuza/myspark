@@ -1,0 +1,47 @@
+#!/bin/bash
+
+#exec >>/root/$(basename $0).log.$(date +%d) 2>&1
+now="$(date +'%Y-%m-%d-%H-%M-%S')"
+
+#exec >>/root/setupR_${now}.log 2>&1
+
+set -e
+
+#ROLE=$(/usr/share/google/get_metadata_value attributes/dataproc-role)
+
+	
+#       cd /tmp
+     #  sed -i -e 's/org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator/org.apache.hadoop.yarn.util.resource.DominantResourceCalculator/g' /usr/lib/hadoop-yarn/etc/hadoop/capacity-scheduler.xml
+        
+	sudo chmod 777 /root
+        sudo mkdir /root/output
+        sudo mkdir /root/scripts
+        sudo mkdir /root/forecast
+	sudo mkdir /root/lib
+        sudo mkdir /root/rlibrary
+	sudo chmod 777 /root/rlibrary
+	sudo chmod 777 /root/output
+        sudo chmod 777 /root/scripts
+        sudo chmod 777 /root/forecast
+	sudo chmod 777 /root/lib
+	#sudo gsutil cp gs://shc-afe-dev.appspot.com/prod/scripts/install*Package.r /root/scripts/
+	sudo aws s3 cp s3://afe-forecast/prod/rpackages/ /root/rlibrary/ --recursive
+	sudo aws s3 cp s3://afe-forecast/prod/scripts/lib/ /root/lib/ --recursive
+	sudo yum install -y expect
+        
+	#cd /root
+	cd /root/rlibrary/
+	for i in *; 
+	do
+		echo "untaring i$" 
+		tar xvf $i;
+		if [ $? -ne "0" ]; then
+			echo "untarring $i failed"
+			exit 1
+		else
+		   	echo "untarring $i succsss"
+		fi
+		   
+	done
+
+	

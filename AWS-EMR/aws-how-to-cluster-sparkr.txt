@@ -1,0 +1,74 @@
+1. Aws cluster creatioj
+
+
+aws emr create-cluster --applications Name=Hadoop Name=Spark --tags 'GROUP=BL_FRCST' 'COSTCENTER=38486' --bootstrap-action Path="s3://inventory-poc-in-memory-spring-boot/sparkcluster/Rpackages/setupRAmazon8.sh" --ec2-attributes '{"KeyName":"amazon-gs-load","InstanceProfile":"EMR_EC2_DefaultRole","ServiceAccessSecurityGroup":"sg-f274068e","SubnetId":"subnet-fff6b9d2","EmrManagedSlaveSecurityGroup":"sg-f174068d","EmrManagedMasterSecurityGroup":"sg-f5740689"}' --service-role EMR_DefaultRole --release-label emr-5.5.0 --log-uri 's3://afe-forecast/sparkcluster/log/'  --name 'dfs-test-cluster' --instance-groups '[{"InstanceCount":8,"InstanceGroupType":"CORE","InstanceType":"m4.4xlarge","Name":"Core - 16"},{"InstanceCount":1,"InstanceGroupType":"MASTER","InstanceType":"m4.4xlarge","Name":"Master - 1"}]' --scale-down-behavior TERMINATE_AT_INSTANCE_HOUR --region us-east-1 
+
+
+2. Copy the cluster id and drop it in the filter search box in ec2 service page.This will list all the ec2 instances.
+
+3. SSH is allowed into your master from your local box. 
+AWS DNS does not get resolved, use hardcoded IP.
+	
+ssh -i amazon-gs-load.pem hadoop@10.237.49.181
+	
+4. SSH Login to other nodes is allowed from the master.
+
+
+	
+5.  user libraries are now installed in /usr/lib64/R/library/.To load a library -
+
+	
+library(forecast)
+	
+
+6. Existing code to fix
+
+	if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+		Sys.setenv(SPARK_HOME = "/usr/lib/spark")
+	}	
+	library(SparkR)
+	
+
+6. To test running  a script directly in client mode from master. 
+Ensure - > sc <- sparkR.session("yarn-client", "SparkR")
+	
+spark-submit --deploy-mode client demandForecastEngine_v4.R
+
+7. 
+Adding a step in client mode using aws.
+ Runs for basic test script, fails for forecasting R scripts.
+	
+aws emr add-steps --cluster-id <cluster-id> --step Type=spark,Name=afe,Args=[--deploy-mode,client,/home/hadoop/demandForecastEngine_v4_client_mode.R]
+
+	
+8. status of your jobs
+		http://<ipaddress-master>:8088/cluster/apps
+		
+
+9. logs		
+		
+https://console.aws.amazon.com/s3/buckets/afe-forecast/sparkcluster/log/?region=us-east-1&tab=overview	
+	
+
+	
+known issues :
+
+
+2. Adding a step in cluster mode using aws. Runs for basic test script, fails for forecasting R scripts.
+
+	
+aws emr add-steps --cluster-id j-2XIWI0NX1R5QE --step Type=spark,Name=afe,Args=[--deploy-mode,cluster,--packages,com.databricks:spark-csv_2.10:1.4.0,s3://inventory-poc-in-memory-spring-boot/sparkcluster/Rpackages/test7.R]
+	
+
+3. To test running  a script directly in cluster mode from master. Ensure - > sc <- sparkR.session("yarn-cluster", "SparkR")  [ Experimental, but with more potential.]
+
+	
+spark-submit --deploy-mode cluster --packages com.databricks:spark-csv_2.10:1.4.0 demandForecastEngine_v4.R
+	
+
+
+
+
+
+
+
